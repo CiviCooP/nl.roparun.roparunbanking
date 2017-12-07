@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<extension key="nl.roparun.roparunbanking" type="module">
+  <file>roparunbanking</file>
+  <name>Roparun CiviBanking Customisations</name>
+  <description>Includes a modified matcher for matching pending contributions</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>Jaap Jansma</author>
+    <email>jaap@edeveloper.nl</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/civicoop/nl.roparun.roparunbanking</url>
+    <url desc="Documentation">https://github.com/civicoop/nl.roparun.roparunbanking</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2017-12-05</releaseDate>
+  <version>1.0</version>
+  <develStage>stable</develStage>
+  <compatibility>
+    <ver>4.7</ver>
+  </compatibility>
+  <civix>
+    <namespace>CRM/Roparunbanking</namespace>
+  </civix>
+</extension>
