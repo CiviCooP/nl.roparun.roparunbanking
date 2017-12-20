@@ -48,7 +48,7 @@
             	 <select name="roparun_create_contribution_financial_type_id" class="crm-form-select">
                   <option value="">{ts} - Select - {/ts}</option>
                   {foreach from=$financial_types item=financial_type key=financial_type_id}
-                      <option value="{$financial_type_id}" {if $financial_type_id == $selected_financial_type_id}selected="selected"{/if}>{$financial_type}</option>
+                      <option value="{$financial_type_id}" {if $financial_type_id == $contribution.financial_type_id}selected="selected"{/if}>{$financial_type}</option>
                   {/foreach}
 							</select>
             </div>
@@ -86,7 +86,7 @@
           <td>
             <div class="btxlabel">{ts}Op naam van Team{/ts}:&nbsp;</div>
             <div class="btxvalue">
-            		<input type="text" class="crm-form-entityref required" placeholder="- selecteer contact -" data-select-params="[]" data-api-params="{literal}{'extra':['email']}{/literal}" data-api-entity="contact" data-create-links="true" name="team_contact_id" id="team_contact_id" value="" />
+            		<input type="text" class="crm-form-entityref required" placeholder="- selecteer contact -" data-select-params="[]" data-api-params="{literal}{'extra':['email']}{/literal}" data-api-entity="contact" data-create-links="true" name="team_contact_id" id="team_contact_id" value="{$contribution.team_contact_id}" />
             </div>
           </td>
         </tr>

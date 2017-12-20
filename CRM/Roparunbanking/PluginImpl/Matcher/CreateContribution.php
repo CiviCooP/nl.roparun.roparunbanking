@@ -229,6 +229,7 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
    * compile the contribution data from the BTX and the propagated values
    */
   function get_contribution_data($btx, $match, $contact_id) {
+  	$data = $btx->getDataParsed();
     $contribution = array();
     $contribution['contact_id'] = $contact_id;
     $contribution['total_amount'] = $btx->amount;
@@ -236,7 +237,27 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     $contribution['currency'] = $btx->currency;
 		$contribution['financial_type_id'] = $match->getParameter('financial_type_id');
     $contribution = array_merge($contribution, $this->getPropagationSet($btx, $match, 'contribution'));
+		if (isset($data['team_nr'])) {
+			// Lookup contact by teamnr
+			$contribution['team_contact_id'] = $this->findContactIdByTeamNr($data['team_nr']);
+		}
     return $contribution;
   }
+
+	private function findContactIdByTeamNr($team_nr) {
+		$config = CRM_Generic_Config::singleton();
+		$event_id = CRM_Generic_CurrentEvent::getCurrentRoparunEventId();
+		try {
+			return civicrm_api3('Participant', 'getvalue', array(
+				'return' => 'contact_id',
+				'custom_' . $config->getTeamNrCustomFieldId() => $team_nr,
+				'event_id' => $event_id,
+				'role_id' => $config->getTeamParticipantRoleId(),
+			));
+		} catch (Exception $ex) {
+			return false;
+		}
+		return false;
+	}
 }
 
