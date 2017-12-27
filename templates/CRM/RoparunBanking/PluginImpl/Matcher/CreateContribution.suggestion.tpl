@@ -13,10 +13,6 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*}
 
-{assign var=contact_id value=$contact.id}
-{capture assign=address_text}{if $contact.city}{$contact.street_address}, {$contact.city}{else}{ts}Address incomplete{/ts}{/if}{/capture}
-{capture assign=contact_link}<a title="{$address_text}" href="{crmURL p="civicrm/contact/view" q="reset=1&cid=$contact_id"}">{$contact.display_name} [{$contact.id}]</a>{/capture}
-
 {if $error}
 <div>
   {ts}An error has occurred:{/ts} {$error}<br/>
@@ -33,11 +29,7 @@
           <td>
             <div class="btxlabel">{ts}Donor{/ts}:&nbsp;</div>
             <div class="btxvalue">
-            	{if $lookup_contact}
-            		<input type="text" class="crm-form-entityref required" placeholder="- selecteer contact -" data-select-params="[]" data-api-params="{literal}{'extra':['email']}{/literal}" data-api-entity="contact" data-create-links="true" name="lookup_contact_id" id="lookup_contact_id" value="" />
-          		{else}
-            		{$contact_link}
-          		{/if}
+          		<input type="text" class="crm-form-entityref required" placeholder="- selecteer contact -" data-select-params="[]" data-api-params="{literal}{'extra':['email']}{/literal}" data-api-entity="contact" data-create-links="true" name="lookup_contact_id" id="lookup_contact_id" value="{if (!empty($contact_id))}{$contact_id}{/if}" />
             </div>
           </td>
         </tr>

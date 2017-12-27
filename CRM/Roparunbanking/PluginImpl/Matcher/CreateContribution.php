@@ -158,16 +158,14 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     $smarty_vars = array();
 
     $contact_id   = $match->getParameter('contact_id');
-		if (empty($contact_id)) {
-			$smarty_vars['lookup_contact'] = true;
-		}
+		$smarty_vars['contact_id'] = $contact_id;
     $contribution = $this->get_contribution_data($btx, $match, $contact_id);
     
     // load contact
     if (!empty($contact_id)) {
     	$contact = civicrm_api('Contact', 'getsingle', array('id' => $contact_id, 'version' => 3));
     	if (!empty($contact['is_error'])) {
-      	$smarty_vars['error'] = $contact['error_message'];
+				$contact = array();
     	}
 		} else {
 			$contact = array();
