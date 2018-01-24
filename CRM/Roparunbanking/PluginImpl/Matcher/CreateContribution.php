@@ -39,6 +39,7 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     if (!isset($config->threshold))              $config->threshold = 0.0;
     if (!isset($config->source_label))           $config->source_label = ts('Source');
     if (!isset($config->lookup_contact_by_name)) $config->lookup_contact_by_name = array("hard_cap_probability" => 0.9);
+		if (!isset($config->default_financial_type_id)) $config->default_financial_type_id = false;
   }
 
 
@@ -115,8 +116,8 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
 
     $suggestion->setParameter('contribution_id', $result['id']);
 
-    // save the account
-    $this->storeAccountWithContact($btx, $suggestion->getParameter('contact_id'));
+    // don not save the bank account
+    //$this->storeAccountWithContact($btx, $suggestion->getParameter('contact_id'));
 
     // wrap it up
     $newStatus = banking_helper_optionvalueid_by_groupname_and_name('civicrm_banking.bank_tx_status', 'Processed');
@@ -158,9 +159,12 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     $smarty_vars = array();
 
     $contact_id   = $match->getParameter('contact_id');
-		$smarty_vars['contact_id'] = $contact_id;
     $contribution = $this->get_contribution_data($btx, $match, $contact_id);
-    
+    if (empty($contact_id) && !empty($contribution['team_contact_id'])) {
+    	$contact_id = $contribution['team_contact_id'];
+    }
+		$smarty_vars['contact_id'] = $contact_id;
+		
     // load contact
     if (!empty($contact_id)) {
     	$contact = civicrm_api('Contact', 'getsingle', array('id' => $contact_id, 'version' => 3));
@@ -227,6 +231,7 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
    * compile the contribution data from the BTX and the propagated values
    */
   function get_contribution_data($btx, $match, $contact_id) {
+  	$config = $this->_plugin_config;
   	$data = $btx->getDataParsed();
     $contribution = array();
     $contribution['contact_id'] = $contact_id;
@@ -234,6 +239,9 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     $contribution['receive_date'] = $btx->value_date;
     $contribution['currency'] = $btx->currency;
 		$contribution['financial_type_id'] = $match->getParameter('financial_type_id');
+		if (empty($contribution['financial_type_id']) && $config->default_financial_type_id) {
+			$contribution['financial_type_id'] = $config->default_financial_type_id;
+		}
     $contribution = array_merge($contribution, $this->getPropagationSet($btx, $match, 'contribution'));
 		if (isset($data['team_nr'])) {
 			// Lookup contact by teamnr
