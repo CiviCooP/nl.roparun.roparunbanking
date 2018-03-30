@@ -84,6 +84,7 @@ function roparunbanking_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_managed
  */
 function roparunbanking_civicrm_managed(&$entities) {
+	banking_civicrm_install_options(CRM_Roparunbanking_Upgrader::bankingOptions());
   _roparunbanking_civix_civicrm_managed($entities);
 }
 

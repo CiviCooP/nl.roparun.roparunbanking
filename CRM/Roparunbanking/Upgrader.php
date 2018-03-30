@@ -27,7 +27,7 @@ class CRM_Roparunbanking_Upgrader extends CRM_Roparunbanking_Upgrader_Base {
    */
   public function uninstall() {
    // Remove banking options
-   $this->removeBankingOptions($this->bankingOptions());
+   $this->removeBankingOptions(self::bankingOptions());
   }
 
   /**
@@ -35,7 +35,7 @@ class CRM_Roparunbanking_Upgrader extends CRM_Roparunbanking_Upgrader_Base {
    */
   public function enable() {
     // Install banking options
-    banking_civicrm_install_options($this->bankingOptions());
+    banking_civicrm_install_options(self::bankingOptions());
   }
 
   /**
@@ -45,7 +45,7 @@ class CRM_Roparunbanking_Upgrader extends CRM_Roparunbanking_Upgrader_Base {
     // Do nothing
   }
 	
-	private function bankingOptions() {
+	public static function bankingOptions() {
 		return array(
       'civicrm_banking.plugin_types' => array(
           'title' => 'CiviBanking plugin types',
@@ -67,6 +67,12 @@ class CRM_Roparunbanking_Upgrader extends CRM_Roparunbanking_Upgrader_Base {
               	'label' => 'Create contribution (Roparun specific)',
               	'value' => 'CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution',
               	'description' => 'Create a contribution with the possibility to add extra information such as financial type',
+              	'is_default' => 0,
+            	),
+            	'matcher_existing_contribution_roparun' => array(
+              	'label' => 'Existing contribution (Roparun specific)',
+              	'value' => 'CRM_Roparunbanking_PluginImpl_Matcher_ExistingContribution',
+              	'description' => 'Finds existing contributions based on the contact id or team nr',
               	'is_default' => 0,
             	),
           ),
