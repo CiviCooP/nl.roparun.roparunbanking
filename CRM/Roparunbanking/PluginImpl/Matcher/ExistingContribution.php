@@ -1,13 +1,25 @@
 <?php
 
 class CRM_Roparunbanking_PluginImpl_Matcher_ExistingContribution extends CRM_Banking_PluginImpl_Matcher_ExistingContribution {
+  
+  /**
+   * class constructor
+   */ 
+  function __construct($config_name) {
+    parent::__construct($config_name);
+    if (!isset($config->contact_fields))         $config->contact_fields = array('contact_id' => 0.9);
+  }
 	
 	protected function findContacts(CRM_Banking_BAO_BankTransaction $btx) {
 		$data_parsed = $btx->getDataParsed();
 		$contacts = array();
-		if (isset($data_parsed['contact_id']) && !empty($data_parsed['contact_id'])) {
-			$contacts[$data_parsed['contact_id']] = 0.9;
-		}
+		// then look up potential contacts
+    $contacts_found = array();
+    foreach($config->contact_fields as $field => $probability) {
+      if (!empty($data_parsed[$field])) {
+        $contacts_found[$data_parsed[$field]] = $probability;
+      }  
+    }
 		if (isset($data_parsed['team_nr']) && !empty($data_parsed['team_nr'])) {		
 			$config = CRM_Generic_Config::singleton();
 			$accepted_status_ids = implode(", ", $this->getAcceptedContributionStatusIDs());

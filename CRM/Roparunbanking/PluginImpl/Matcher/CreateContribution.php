@@ -60,14 +60,12 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
 
     // then look up potential contacts
     $contacts_found = array();
-    //var_dump($config->contact_fields); 
     foreach($config->contact_fields as $field => $probability) {
-  //    echo $field;
       if (!empty($data_parsed[$field])) {
         $contacts_found[$data_parsed[$field]] = $probability;
       }  
     }
-//var_dump($contacts_found); exit();
+
     // finally generate suggestions
     foreach ($contacts_found as $contact_id => $contact_probability) {
       $suggestion = new CRM_Banking_Matcher_Suggestion($this, $btx);
