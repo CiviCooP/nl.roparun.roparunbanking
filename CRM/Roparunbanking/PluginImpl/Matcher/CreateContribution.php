@@ -40,6 +40,7 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     if (!isset($config->source_label))           $config->source_label = ts('Source');
     if (!isset($config->lookup_contact_by_name)) $config->lookup_contact_by_name = array("hard_cap_probability" => 0.9);
 		if (!isset($config->default_financial_type_id)) $config->default_financial_type_id = false;
+    if (!isset($config->contact_fields))         $config->contact_fields = array('contact_id' => 1.0);
   }
 
 
@@ -58,8 +59,15 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     if (!$this->requiredValuesPresent($btx)) return null;
 
     // then look up potential contacts
-    $contacts_found = $context->findContacts($threshold, $data_parsed['name'], $config->lookup_contact_by_name);
-
+    $contacts_found = array();
+    //var_dump($config->contact_fields); 
+    foreach($config->contact_fields as $field => $probability) {
+  //    echo $field;
+      if (!empty($data_parsed[$field])) {
+        $contacts_found[$data_parsed[$field]] = $probability;
+      }  
+    }
+//var_dump($contacts_found); exit();
     // finally generate suggestions
     foreach ($contacts_found as $contact_id => $contact_probability) {
       $suggestion = new CRM_Banking_Matcher_Suggestion($this, $btx);
@@ -146,6 +154,9 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
 		if (isset($parameters['teamlid_contact_id'])) {
       $match->setParameter('teamlid_contact_id', $parameters['teamlid_contact_id']);
     }
+    if (isset($parameters['payment_instrument_id'])) {
+      $match->setParameter('payment_instrument_id', $parameters['payment_instrument_id']);
+    }
   }
 
   /** 
@@ -188,6 +199,9 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
         $smarty_vars['campaign'] = $campaign;
       }
     }
+    
+    $payment_instruments = CRM_Contribute_PseudoConstant::paymentInstrument();
+    $smarty_vars['payment_instruments'] = $payment_instruments;
     
     // assign source
     $smarty_vars['source']       = CRM_Utils_Array::value('source', $contribution);
@@ -238,15 +252,20 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
     $contribution['total_amount'] = $btx->amount;
     $contribution['receive_date'] = $btx->value_date;
     $contribution['currency'] = $btx->currency;
-		$contribution['financial_type_id'] = $match->getParameter('financial_type_id');
-		if (empty($contribution['financial_type_id']) && $config->default_financial_type_id) {
-			$contribution['financial_type_id'] = $config->default_financial_type_id;
-		}
     $contribution = array_merge($contribution, $this->getPropagationSet($btx, $match, 'contribution'));
 		if (isset($data['team_nr'])) {
 			// Lookup contact by teamnr
 			$contribution['team_contact_id'] = $this->findContactIdByTeamNr($data['team_nr']);
 		}
+    if (empty($contribution['payment_instrument_id']) && isset($data['payment_instrument_id'])) {
+      $contribution['payment_instrument_id'] = $data['payment_instrument_id'];
+    }
+    if (empty($contribution['financial_type_id']) && isset($data['financial_type_id'])) {
+      $contribution['financial_type_id'] = $data['financial_type_id'];
+    }
+    if (empty($contribution['financial_type_id']) && $config->default_financial_type_id) {
+      $contribution['financial_type_id'] = $config->default_financial_type_id;
+    }
     return $contribution;
   }
 

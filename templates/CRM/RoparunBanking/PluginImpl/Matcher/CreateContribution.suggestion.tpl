@@ -48,6 +48,19 @@
         </tr>
         <tr>
           <td>
+            <div class="btxlabel">{ts}Payment instrument{/ts}:&nbsp;</div>
+            <div class="btxvalue">
+               <select name="payment_instrument_id" class="crm-form-select">
+                  <option value="">{ts} - Select - {/ts}</option>
+                  {foreach from=$payment_instruments item=payment_instrument key=payment_instrument_id}
+                      <option value="{$payment_instrument_id}" {if $payment_instrument_id == $contribution.payment_instrument_id}selected="selected"{/if}>{$payment_instrument}</option>
+                  {/foreach}
+              </select>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>
             <div class="btxlabel">{ts}Amount{/ts}:&nbsp;</div>
             <div class="btxvalue">{$contribution.total_amount|crmMoney:$contribution.currency}</div>
           </td>
