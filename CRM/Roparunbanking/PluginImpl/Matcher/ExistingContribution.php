@@ -7,17 +7,18 @@ class CRM_Roparunbanking_PluginImpl_Matcher_ExistingContribution extends CRM_Ban
    */ 
   function __construct($config_name) {
     parent::__construct($config_name);
+    $config = $this->_plugin_config;
     if (!isset($config->contact_fields))         $config->contact_fields = array('contact_id' => 0.9);
   }
 	
 	protected function findContacts(CRM_Banking_BAO_BankTransaction $btx) {
+	  $config = $this->_plugin_config;
 		$data_parsed = $btx->getDataParsed();
 		$contacts = array();
 		// then look up potential contacts
-    $contacts_found = array();
     foreach($config->contact_fields as $field => $probability) {
       if (!empty($data_parsed[$field])) {
-        $contacts_found[$data_parsed[$field]] = $probability;
+        $contacts[$data_parsed[$field]] = $probability;
       }  
     }
 		if (isset($data_parsed['team_nr']) && !empty($data_parsed['team_nr'])) {		
@@ -28,32 +29,68 @@ class CRM_Roparunbanking_PluginImpl_Matcher_ExistingContribution extends CRM_Ban
 						INNER JOIN `{$config->getDonatedTowardsCustomGroupTableName()}` `towards` ON `contribution`.`id` = `towards`.`entity_id`
 						INNER JOIN `civicrm_participant` ON `civicrm_participant`.`contact_id` = `towards`.`{$config->getTowardsTeamCustomFieldColumnName()}`
 						INNER JOIN `{$config->getTeamDataCustomGroupTableName()}` `team_data` ON `civicrm_participant`.`id` = `team_data`.`entity_id`
-						WHERE `contribution`.`contribution_status_id` IN ({$accepted_status_ids})
+						WHERE `contribution`.`contribution_status_id` IN ({$accepted_status_ids}) AND contribution.is_test = 0
 						AND `team_data`.`{$config->getTeamNrCustomFieldColumnName()}` = %1";
 			$sqlParams[1] = array($data_parsed['team_nr'], 'String');
 			$dao = CRM_Core_DAO::executeQuery($sql, $sqlParams);
 			while($dao->fetch()) {
-				if (isset($data_parsed['contact_id']) && $data_parsed['contact_id'] == $dao->contact_id) {
-					$contacts[$dao->contact_id] = 1.0;
-				} else {
+				if (!isset($contacts_found[$dao->contact_id])) {
 					$contacts[$dao->contact_id] = 0.5;
 				}
 			}
 		}
-		if (empty($contacts) && isset($data_parsed['campaign_id'])) {
-			$accepted_status_ids = implode(", ", $this->getAcceptedContributionStatusIDs());
-			$sql = "SELECT DISTINCT contribution.contact_id
-						FROM `civicrm_contribution` `contribution`
-						WHERE `contribution`.`contribution_status_id` IN ({$accepted_status_ids}) 
-						AND `contribution`.`campaign_id` = %1";
-			$sqlParams[1] = array($data_parsed['campaign_id'], 'Integer');
-			$dao = CRM_Core_DAO::executeQuery($sql, $sqlParams);
-			while($dao->fetch()) {
-				$contacts[$dao->contact_id] = 0.4;
-			}
-		}
+		
 		return $contacts;
 	}
+
+  public function getPotentialContributionsForCampaign($campaign_id, CRM_Banking_BAO_BankTransaction $btx, CRM_Banking_Matcher_Context $context) {
+    $config = $this->_plugin_config;
+    $data_parsed = $btx->getDataParsed();
+    
+    $accepted_status_ids = implode(", ", $this->getAcceptedContributionStatusIDs());
+    $booking_date = DateTime::createFromFormat('YmdHis', $btx->booking_date);
+    $booking_date = $booking_date->format('Y-m-d');
+    $value_date = DateTime::createFromFormat('YmdHis', $btx->value_date);
+    $value_date = $value_date->format('Y-m-d');
+    $date_interval = 1;
+
+    // check in cache
+    $cache_key = "_contributions_campaign_${campaign_id}_".base64_encode($accepted_status_ids);
+    $contributions = $context->getCachedEntry($cache_key);
+    
+    if ($contributions != NULL) return $contributions;
+
+    $contributions = array();  
+    
+    $sql = "SELECT *
+            FROM `civicrm_contribution` `contribution`
+            WHERE `contribution`.`contribution_status_id` IN ({$accepted_status_ids}) 
+            AND `contribution`.`campaign_id` = %1
+            AND is_test = '0'
+            AND (
+                  (
+                    receive_date > (DATE('{$booking_date}') - INTERVAL {$date_interval} DAY) 
+                    AND 
+                    receive_date < (DATE('{$booking_date}') + INTERVAL {$date_interval} DAY)
+                  )
+                  OR
+                  (
+                    receive_date > (DATE('{$value_date}') - INTERVAL {$date_interval} DAY) 
+                    AND 
+                    receive_date < (DATE('{$value_date}') + INTERVAL {$date_interval} DAY)
+                  )
+                )";
+
+    $sqlParams[1] = array($campaign_id, 'Integer');
+    $contribution = CRM_Contribute_DAO_Contribution::executeQuery($sql, $sqlParams);
+    while ($contribution->fetch()) {
+      array_push($contributions, $contribution->toArray());
+    }
+
+    // cache result and return
+    $context->setCachedEntry($cache_key, $contributions);
+    return $contributions;
+  }
 	
 	/** 
    * Generate a set of suggestions for the given bank transaction
@@ -95,6 +132,25 @@ class CRM_Roparunbanking_PluginImpl_Matcher_ExistingContribution extends CRM_Ban
 
           // apply penalty
           $contribution_probability -= $penalty;
+
+          if ($contribution_probability > $threshold) {
+            $contributions[$contribution['id']] = $contribution_probability;
+            $contribution2contact[$contribution['id']] = $contact_id;
+            $contribution2totalamount[$contribution['id']] = $contribution['total_amount'];
+          }        
+        }
+      }
+      
+      if (empty($contributions) && !empty($data_parsed['campaign_id'])) {
+        $potential_contributions = $this->getPotentialContributionsForCampaign($data_parsed['campaign_id'], $btx, $context);
+        foreach ($potential_contributions as $contribution) {
+          // check for expected status
+          if (!in_array($contribution['contribution_status_id'], $accepted_status_ids)) continue;
+
+          $contribution_probability = $this->rateContribution($contribution, $context);
+
+          // apply penalty
+          $contribution_probability -= 0.6;
 
           if ($contribution_probability > $threshold) {
             $contributions[$contribution['id']] = $contribution_probability;
