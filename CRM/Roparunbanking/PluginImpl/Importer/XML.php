@@ -17,7 +17,7 @@ class CRM_Roparunbanking_PluginImpl_Importer_XML extends CRM_Banking_PluginImpl_
 		for ($i = 0; $i<$zip->numFiles; $i++) {
 			$name = $zip->getNameIndex($i);
 			$temp_file = tempnam(sys_get_temp_dir(), $name);
-    	$document = $zip->getFromIndex($i);
+    	$document = utf8_encode($zip->getFromIndex($i));
 			file_put_contents($temp_file, $document);
 			$this->extractedFiles[] = $temp_file;
 		}
