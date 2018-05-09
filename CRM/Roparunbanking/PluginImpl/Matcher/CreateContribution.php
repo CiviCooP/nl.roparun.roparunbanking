@@ -72,6 +72,13 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
       $suggestion->setTitle(ts("Create a new contribution"));
       $suggestion->setId("create-$contact_id");
       $suggestion->setParameter('contact_id', $contact_id);
+      if (isset($data_parsed['financial_type_id'])) {
+        $suggestion->setParameter('financial_type_id', $data_parsed['financial_type_id']);
+      }
+      if (isset($data_parsed['team_nr'])) {
+        // Lookup contact by teamnr
+        $suggestion->setParameter('team_contact_id', $this->findContactIdByTeamNr($data_parsed['team_nr']));
+      }
 
       // set probability manually, I think the automatic calculation provided by ->addEvidence might not be what we need here
       $contact_probability -= $penalty;
@@ -85,6 +92,13 @@ class CRM_Roparunbanking_PluginImpl_Matcher_CreateContribution extends CRM_Banki
       $suggestion->setTitle(ts("Create a new contribution"));
       $suggestion->setId("create-0");
       $suggestion->setParameter('contact_id', 0);
+      if (isset($data_parsed['financial_type_id'])) {
+        $suggestion->setParameter('financial_type_id', $data_parsed['financial_type_id']);
+      }
+      if (isset($data_parsed['team_nr'])) {
+        // Lookup contact by teamnr
+        $suggestion->setParameter('team_contact_id', $this->findContactIdByTeamNr($data_parsed['team_nr']));
+      }
 
       // set probability manually, I think the automatic calculation provided by ->addEvidence might not be what we need here
       $contact_probability = 1 - $penalty;
